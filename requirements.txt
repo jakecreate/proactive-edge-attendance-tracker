@@ -1,0 +1,4 @@
+opencv-python==4.13.0.92
+torch==2.10.0
+torchvision==0.25.0
+scrfd==0.3.0
