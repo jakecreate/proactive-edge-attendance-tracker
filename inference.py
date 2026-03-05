@@ -1,13 +1,29 @@
 import cv2 as cv
 from PIL import Image
-
 import numpy as np
 import torch
-
 from scrfd import SCRFD, Threshold
- 
+
+# global def
 scrfd_model = SCRFD.from_path('./models/scrfd.onnx')
 threshold = Threshold(probability=0.4)
+
+# func def
+def find_biggest_face(faces: list):
+    max_idx = None
+    max_area = 0
+    for i, face in enumerate(faces):
+        ul = face.bbox.upper_left
+        lr = face.bbox.lower_right
+
+        area = (lr.x - ul.x) * (lr.y - ul.y)
+        if area > max_area:
+            max_area = area
+            max_idx = i
+
+    return faces[max_idx]
+
+# program
 cap = cv.VideoCapture(0)
 
 if not cap.isOpened():
@@ -26,33 +42,19 @@ while True:
     image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
     faces = scrfd_model.detect(Image.fromarray(image),threshold=threshold)
 
-    if len(faces) == 0:
-        print('| no face detected')
-        continue
+    face = find_biggest_face(faces) 
 
-    # filter biggest photo
-    max_idx = None
-    max_area = 0
-    for i, face in enumerate(faces):
-        ul = face.bbox.upper_left
-        lr = face.bbox.lower_right
+    if face is not None:
+        ul, lr = face.bbox.upper_left, face.bbox.lower_right
+        ul_x, ul_y, lr_x, lr_y = int(ul.x), int(ul.y), int(lr.x), int(lr.y)
+        
+        # draw box
+        color = (0, 255, 0) 
+        text = 'biggest face'
+        cv.rectangle(frame, (ul_x, ul_y), (lr_x, lr_y), color, 2)
+        cv.putText(frame, text, (ul_x, ul_y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-        area = (lr.x - ul.x) * (lr.y - ul.y)
-        if area > max_area:
-            max_area = area
-            max_idx = i
-
-    face = faces[max_idx]
-    ul = face.bbox.upper_left
-    lr = face.bbox.lower_right
-    ul_x, ul_y, lr_x, lr_y = int(ul.x), int(ul.y), int(lr.x), int(lr.y)
-
-    # draw box
-    color = (0, 255, 0) 
-    text = 'biggest face'
-    cv.rectangle(frame, (ul_x, ul_y), (lr_x, lr_y), color, 2)
-    cv.putText(frame, text, (ul_x, ul_y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-    cv.imshow('frame', image[ul_y:lr_y, ul_x:lr_x])
+    cv.imshow('frame', frame)
     if cv.waitKey(1) == ord('q'):
         break
  
