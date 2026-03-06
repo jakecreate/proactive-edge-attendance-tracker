@@ -1,13 +1,13 @@
 import os
 import sqlite3
-import inference as inf
+from . import inference as inf
 
 import cv2 as cv
 from PIL import Image
 import numpy as np
 import torch
 from scrfd import SCRFD, Threshold
-from core.model import MobileFacenet
+from . core.model import MobileFacenet
 
 from datetime import datetime
 
@@ -21,7 +21,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
 
 
-def live_capture_faces(dir_storage, scrfd_model, mfn_model, thresh=0.7):
+def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model, thresh=0.7):
     cap = cv.VideoCapture(0)
     threshold = Threshold(probability=0.4)
 
@@ -119,8 +119,8 @@ def live_capture_faces(dir_storage, scrfd_model, mfn_model, thresh=0.7):
     connection = sqlite3.connect(dir_storage)
     cursor = connection.cursor()
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS course_section (
+    cursor.execute(f'''
+        CREATE TABLE IF NOT EXISTS {course_section} (
             sid INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT,
             embedding BLOB
@@ -133,8 +133,8 @@ def live_capture_faces(dir_storage, scrfd_model, mfn_model, thresh=0.7):
         for r_idx in range(embeddings.shape[0]):
             vector = embeddings[r_idx]
 
-            cursor.execute('''
-                INSERT INTO course_section (name, embedding)
+            cursor.execute(f'''
+                INSERT INTO {course_section} (name, embedding)
                 VALUES (?, ?)
 
             ''', (name, vector.tobytes()))
@@ -156,10 +156,10 @@ def convert_data(rows):
     return np.array(embedding_list), np.array(name_list)
 
 
-def train_knn(dir_storage):
+def train_knn(dir_storage, course_section):
     connection = sqlite3.connect(dir_storage)
     cursor = connection.cursor()
-    cursor.execute("SELECT name, embedding FROM course_section")
+    cursor.execute(f'SELECT name, embedding FROM {course_section}')
     rows = cursor.fetchall()
     connection.close()
 

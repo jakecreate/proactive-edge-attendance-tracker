@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from scrfd import SCRFD, Threshold
-from core.model import MobileFacenet
+from . core.model import MobileFacenet
 import joblib
 
 def find_biggest_face(faces: list):
