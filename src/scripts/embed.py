@@ -4,13 +4,21 @@ import inference as inf
 
 import cv2 as cv
 from PIL import Image
-import math
 import numpy as np
 import torch
 from scrfd import SCRFD, Threshold
 from core.model import MobileFacenet
 
 from datetime import datetime
+
+import sqlite3
+import torch
+import cv2
+import numpy as np
+
+import joblib
+from sklearn.preprocessing import LabelEncoder
+from sklearn.neighbors import KNeighborsClassifier
 
 
 def live_capture_faces(dir_storage, scrfd_model, mfn_model, thresh=0.7):
@@ -70,7 +78,7 @@ def live_capture_faces(dir_storage, scrfd_model, mfn_model, thresh=0.7):
         else:
             print('| no face detected')
 
-        cv.imshow('frame',aligned_face)
+        cv.imshow('frame', frame)
         key = cv.waitKey(1)
         
         if key == ord('s'):
@@ -132,7 +140,37 @@ def live_capture_faces(dir_storage, scrfd_model, mfn_model, thresh=0.7):
             ''', (name, vector.tobytes()))
 
     connection.commit()
+    connection.close()
+
     print('all student embeddings have been stored')
+
+
+def convert_data(rows):
+    embedding_list = []
+    name_list = []
+    for name, binary_emb in rows:
+        embedding = np.frombuffer(binary_emb, dtype=np.float32)
+        embedding_list.append(embedding)
+        name_list.append(name)
+
+    return np.array(embedding_list), np.array(name_list)
+
+
+def train_knn(dir_storage):
+    connection = sqlite3.connect(dir_storage)
+    cursor = connection.cursor()
+    cursor.execute("SELECT name, embedding FROM course_section")
+    rows = cursor.fetchall()
+    connection.close()
+
+    X, y = convert_data(rows)
+    encoder = LabelEncoder()
+    knn = KNeighborsClassifier(n_neighbors=5, metric='cosine')
+
+    y_encoded = encoder.fit_transform(y)
+    knn.fit(X, y_encoded)
+    print('training knn complete')
+    return knn, encoder
 
 if __name__ == '__main__':
     device = 'cpu'
@@ -147,6 +185,10 @@ if __name__ == '__main__':
     print('SCRFD loaded')
 
     live_capture_faces(dir_storage='../../data/department.db', scrfd_model=scrfd_model, mfn_model=mfn_model)
+    knn_model, encoder = train_knn('../../data/department.db')
+
+    joblib.dump(knn_model, '../../models/knn.joblib')
+    joblib.dump(encoder, '../../models/label_encoder.joblib')
 
 
 
