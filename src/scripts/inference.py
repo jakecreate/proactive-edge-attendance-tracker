@@ -95,7 +95,7 @@ def enable_inference(scrfd_model, mfn_model, thresh=0.7):
             # feed aligned_face into mobile-face-net and compare to prexisting TODO
 
             # draw box
-            color = (0, 255, 0) 
+            color = (0, 255, 0) # change color and text if no one is detected
             text = 'biggest face'
             text_ul = (scaled_ul[0], scaled_ul[1] - 10)
             cv.rectangle(frame, scaled_ul, scaled_lr, color, 2)
