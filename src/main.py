@@ -75,16 +75,13 @@ while (decision != 'quit'):
 
 
     elif decision == '4':
-        # --- Email Configuration ---
         sender_email = input('Enter your email address: ')
         receiver_email = input('Enter the recipient email address: ')
-        # Use the generated App Password, NOT your regular password
+
         app_password = input('Enter your email app password: ')
 
-        # --- Create the email message ---
         msg = EmailMessage()
         msg.set_content('Please find the attached database file for attendance.') 
-        # Inside elif decision == '4':
         
         file_path = f'data/{department}.db'
         with open(file_path, 'rb') as f:
@@ -95,9 +92,7 @@ while (decision != 'quit'):
         msg['From'] = sender_email
         msg['To'] = receiver_email
 
-        # --- Send the email ---
         try:
-            # Create a secure SSL context
             context = ssl.create_default_context() 
             
             with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
