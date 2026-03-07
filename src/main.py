@@ -2,6 +2,7 @@ import scripts.embed as emb
 import scripts.inference as inf
 import torch
 import smtplib
+import sqlite3
 
 device = 'cpu'
 
@@ -29,7 +30,7 @@ course = coursename
 decision = ' '
 
 while (decision != 'quit'):
-    decision = input('1. Add student to database\n2.Take Attendance \n3.Display Registered Students \n4.Send Attendance Sheet to Google Drive' \
+    decision = input('1.Add student to database\n2.Take Attendance \n3.Display Registered Students \n4.Send Attendance Sheet to Google Drive' \
     '\nType "quit" to exit\nEnter your choice: ')
 
     if decision == '1':
@@ -45,8 +46,32 @@ while (decision != 'quit'):
         inf.enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7)
 
     elif decision == '3':
-        #Placeholder for print department.db
-        print('Registered students:')
+        # Use the 'course' variable as the table name
+        db_path = f'data/{department}.db'
+        print(f'\n--- Registered Students in {course} ---')
+        
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute(f"SELECT DISTINCT name FROM {course}") 
+            rows = cursor.fetchall()
+            
+            if not rows:
+                print(f"No students found in the {course} table.")
+            else:
+                print(f"{'No.':<4} | {'Student Name':<20}")
+                print("-" * 28)
+                for idx, row in enumerate(rows, 1):
+                    print(f"{idx:<4} | {row[0]:<20}")
+            
+            conn.close()
+        except sqlite3.OperationalError:
+            print(f"Error: The table '{course}' does not exist yet. Add a student first!")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+        
+        input('\nPress Enter to return to menu...')
 
 
     elif decision == '4':
@@ -89,28 +114,6 @@ while (decision != 'quit'):
     else:
         print('Invalid choice. Please try again.')
         continue
-
-
-
-
-
-
-
-# ## add student to database
-# emb.live_capture_faces(dir_storage=f'data/{department}.db',
-#                        course_section=course,
-#                        scrfd_model=scrfd_model,
-#                        mfn_model=mfn_model)
-
-
-# # train classifier (this specifies which course it will be take attendance)
-# knn, le = emb.train_knn(dir_storage=f'data/{department}.db',
-#                         course_section=course)
-
-
-# # take attendance
-# inf.enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7)
-
 
 
 
