@@ -1,12 +1,11 @@
+import torch
+from scrfd import SCRFD
 import scripts.embed as emb
 import scripts.inference as inf
-import torch
+from scripts.core.model import MobileFacenet
+
 
 device = 'cpu'
-
-from scripts.core.model import MobileFacenet
-from scrfd import SCRFD, Threshold
-# import models
 mfn_model = MobileFacenet().to(device)
 checkpoint = torch.load('models/mobile_face_net.ckpt', map_location=device)
 mfn_model.load_state_dict(checkpoint['net_state_dict'])
@@ -24,15 +23,9 @@ emb.live_capture_faces(dir_storage=f'data/{department}.db',
                        scrfd_model=scrfd_model,
                        mfn_model=mfn_model)
 
-
-# train classifier (this specifies which course it will be take attendance)
+# train course classifier 
 knn, le = emb.train_knn(dir_storage=f'data/{department}.db',
                         course_section=course)
 
-
 # take attendance
 inf.enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7)
-
-
-
-

@@ -26,13 +26,13 @@ def find_biggest_face(faces: list):
 
 def process_kps(face):
     kps = face.keypoints
-    return np.float32([
+    return np.array([
         [kps.left_eye.x, kps.left_eye.y],
         [kps.right_eye.x, kps.right_eye.y],
         [kps.nose.x, kps.nose.y],
         [kps.left_mouth.x, kps.left_mouth.y],
         [kps.right_mouth.x, kps.right_mouth.y]
-    ])
+    ], dtype=np.float32)
 
 def crop_face(frame, dimensions: tuple, scale=4):
     ul_x, ul_y, lr_x, lr_y = dimensions
@@ -62,13 +62,13 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
         print("| cannot open camera")
         exit()
 
-    std_kps = np.float32([
+    std_kps = np.array([
         [38.29, 51.69], # left eye
         [73.53, 51.50], # right eye
         [56.02, 71.73], # ideal Nose
         [41.54, 92.36], # mouth left
         [70.72, 92.20], # mouth right
-    ])
+    ], dtype=np.float32)
 
     while True:
         # capture
@@ -137,9 +137,6 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
             cv.rectangle(frame, scaled_ul, scaled_lr, color, 2)
             cv.putText(frame, text, text_ul, cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-        else:
-            print('| no face detected')
-
         cv.imshow('frame',frame)
         if cv.waitKey(1) == ord('q'):
             break
@@ -148,18 +145,18 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
     cv.destroyAllWindows()
 
 # program
-if __name__ == '__main__':
-    device = 'cpu'
-    scrfd_model = SCRFD.from_path('../../models/scrfd.onnx')
+# if __name__ == '__main__':
+    # device = 'cpu'
+    # scrfd_model = SCRFD.from_path('../../models/scrfd.onnx')
 
-    mfn_model = MobileFacenet().to(device)
-    checkpoint = torch.load('../../models/mobile_face_net.ckpt', map_location=device)
-    mfn_model.load_state_dict(checkpoint['net_state_dict'])
-    mfn_model.eval()
+    # mfn_model = MobileFacenet().to(device)
+    # checkpoint = torch.load('../../models/mobile_face_net.ckpt', map_location=device)
+    # mfn_model.load_state_dict(checkpoint['net_state_dict'])
+    # mfn_model.eval()
 
-    print('MobileFaceNet loaded')
+    # print('MobileFaceNet loaded')
 
-    knn = joblib.load('../../models/knn.joblib')
-    encoder = joblib.load('../../models/label_encoder.joblib')
+    # knn = joblib.load('../../models/knn.joblib')
+    # encoder = joblib.load('../../models/label_encoder.joblib')
 
-    enable_inference(scrfd_model, mfn_model, knn, encoder, thresh=0.7)
+    # enable_inference(scrfd_model, mfn_model, knn, encoder, thresh=0.7)
