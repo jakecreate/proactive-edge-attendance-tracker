@@ -74,14 +74,14 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
 
             text_ul = (scaled_ul[0], scaled_ul[1] - 10)
             cv.rectangle(frame, scaled_ul, scaled_lr, color, 2)
-            cv.putText(frame, text, text_ul, cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            cv.putText(frame, text.replace('_', ' '), text_ul, cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
         cv.imshow('frame', frame)
         key = cv.waitKey(1)
 
         if key == ord('e'):
             if (len(snapshots) == 0) or (len(snapshots[curr_name_idx]) != 0):
-                curr_name = input("enter new student's name: ").strip().replace(" ", "_")
+                curr_name = input("enter new student's name: ").strip().replace(' ', '_')
                 curr_name_idx+=1
                 student_names.append(curr_name)
                 snapshots.append([])
@@ -94,7 +94,7 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     snapshots[curr_name_idx].append(aligned_face.copy())
                     aligned_face = None
-                    print(f'captured snapshot of {curr_name} @ {timestamp}')
+                    print(f'captured snapshot of {curr_name.replace('_', ' ')} @ {timestamp}')
                     pressed_counter = 15 
                 else:
                     print('| no face detected')
@@ -146,7 +146,8 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
     connection.commit()
     connection.close()
 
-    print('all student embeddings have been stored')
+    cap.release()
+    cv.destroyAllWindows()
 
 
 def convert_data(rows):
