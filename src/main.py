@@ -17,8 +17,8 @@ scrfd_model = SCRFD.from_path('models/scrfd.onnx')
 print('SCRFD loaded.')
 
 print('PAT - [P]rocative edge [A]ttendance [T]racker')
-department = input('> please pick a department: ')
-course = input('> please pick course + section: ')
+department = input('> please pick a department: ').strip()
+course = input('> please pick course + section: ').strip().replace(' ', '_')
 
 db_dir = f'data/{department}.db'
 sheet = None
