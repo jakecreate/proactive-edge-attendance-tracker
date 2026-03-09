@@ -102,7 +102,7 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
                 print('| no name has been entered')
 
         elif key == ord('q'):
-            print('quitting session')
+            print('ending capture session')
             break
      
     cap.release()
