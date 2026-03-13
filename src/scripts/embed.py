@@ -13,7 +13,6 @@ from sklearn.neighbors import KNeighborsClassifier
 def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
     cap = cv.VideoCapture(0)
     threshold = Threshold(probability=0.4)
-
     if not cap.isOpened():
         print("| cannot open camera")
         exit()
@@ -25,13 +24,13 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
         [41.54, 92.36], # mouth left
         [70.72, 92.20], # mouth right
     ], dtype=np.float32)
-
     curr_name = None
     curr_name_idx = -1
     student_names = []
     snapshots = []
     aligned_face = None
     pressed_counter = 0
+    abort = False
     
     print('[live capture mode]')
     print('- (e)nter student name ')
@@ -39,31 +38,24 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
     print('- (q)uit')
 
     while True:
-        # capture
         ret, frame = cap.read()
-     
         if not ret:
             print("| can't receive frame --> exiting ...")
             break
 
-        # preprocessing
         frame_rgb= cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         faces = scrfd_model.detect(Image.fromarray(frame_rgb),threshold=threshold)
         face = inf.find_biggest_face(faces) 
 
         if face is not None:
-            # get coordinates of ul & lr + kps
             ul, lr = face.bbox.upper_left, face.bbox.lower_right
             ul_x, ul_y, lr_x, lr_y = round(ul.x), round(ul.y), round(lr.x), round(lr.y)
-
-            # segment face + 20% expansion of area
             src_kps = inf.process_kps(face)
             cropped_face, scaled_ul, scaled_lr = inf.crop_face(frame, (ul_x, ul_y, lr_x, lr_y))
             local_kps = src_kps - np.array(scaled_ul)
             M, _ = cv.estimateAffinePartial2D(local_kps, std_kps)
             aligned_face = cv.warpAffine(cropped_face, M, (112, 112), borderMode=cv.BORDER_CONSTANT)
 
-            # output
             if pressed_counter > 0:
                 color = (0, 0, 255)
                 text = 'captured'
@@ -88,6 +80,7 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
                 print(f'now capturing for {curr_name} ...')
             else:
                 print('| no photo has been taken yet')
+
         elif key == ord('c'):
             if curr_name is not None:
                 if aligned_face is not None:
@@ -102,11 +95,24 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
                 print('| no name has been entered')
 
         elif key == ord('q'):
-            print('ending capture session')
-            break
-     
+            if curr_name_idx > -1:
+                if len(snapshots[curr_name_idx]) != 0:
+                    print('ending capture session')
+                    break
+                else:
+                    print(f'| no photo was taken for {curr_name}')
+            else:
+                print(f'| no students were (e)ntered')
+            print('| press (a) if you would like to abort the session')
+        elif key == ord('a'):
+            print('aborting session...')
+            abort = True
+    
     cap.release()
     cv.destroyAllWindows()
+
+    if abort:
+        return
 
     # embed
     embeddings_list = []
@@ -133,21 +139,16 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
 
     for idx, embeddings in enumerate(embeddings_list):
         name = student_names[idx]
-    
         for r_idx in range(embeddings.shape[0]):
             vector = embeddings[r_idx]
-
             cursor.execute(f'''
                 INSERT INTO {course_section} (name, embedding)
                 VALUES (?, ?)
-
             ''', (name, vector.tobytes()))
 
     connection.commit()
     connection.close()
-
-    cap.release()
-    cv.destroyAllWindows()
+    print(f'{course_section} saved to {dir_storage}')
 
 
 def convert_data(rows):
@@ -174,34 +175,6 @@ def train_knn(dir_storage, course_section):
 
     y_encoded = encoder.fit_transform(y)
     knn.fit(X, y_encoded)
-    print('training knn complete')
     return knn, encoder
-
-# if __name__ == '__main__':
-    # device = 'cpu'
-
-    # mfn_model = MobileFacenet().to(device)
-    # checkpoint = torch.load('../../models/mobile_face_net.ckpt', map_location=device)
-    # mfn_model.load_state_dict(checkpoint['net_state_dict'])
-    # mfn_model.eval()
-    # print('MobileFaceNet loaded')
-
-    # scrfd_model = SCRFD.from_path('../../models/scrfd.onnx')
-    # print('SCRFD loaded')
-
-    # live_capture_faces(dir_storage='../../data/department.db', scrfd_model=scrfd_model, mfn_model=mfn_model)
-    # knn_model, encoder = train_knn('../../data/department.db')
-
-    # joblib.dump(knn_model, '../../models/knn.joblib')
-    # joblib.dump(encoder, '../../models/label_encoder.joblib')
-
-
-
-    
-
-
-
-
-
 
 

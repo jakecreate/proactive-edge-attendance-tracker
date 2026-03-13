@@ -4,24 +4,20 @@ import math
 import numpy as np
 import torch
 import pandas as pd
-from scrfd import SCRFD, Threshold
-from . core.model import MobileFacenet
-import joblib
+from scrfd import Threshold
 
 def find_biggest_face(faces: list):
-    if len(faces) == 0: return None
-
+    if len(faces) == 0:
+        return None
     max_idx = -1
     max_area = 0
     for i, face in enumerate(faces):
         ul = face.bbox.upper_left
         lr = face.bbox.lower_right
-
         area = (lr.x - ul.x) * (lr.y - ul.y)
         if area > max_area:
             max_area = area
             max_idx = i
-
     return faces[max_idx]
 
 def process_kps(face):
@@ -57,10 +53,9 @@ def crop_face(frame, dimensions: tuple, scale=4):
 def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
     cap = cv.VideoCapture(0)
     threshold = Threshold(probability=0.4)
-
     if not cap.isOpened():
         print("| cannot open camera")
-        exit()
+        return None
 
     std_kps = np.array([
         [38.29, 51.69], # left eye
@@ -71,31 +66,26 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
     ], dtype=np.float32)
     w_coef = np.array([1, 1/2, 1/3, 1/4, 1/5], dtype=np.float32)
     present = np.zeros(len(le.classes_))
-
     name = ''
     avg_sim = 0
     present_sheet = None
     detected_counter = 0
+
+    # start inference
     while True:
-        # capture
         ret, frame = cap.read()
-     
         if not ret:
             print("| can't receive frame --> exiting ...")
             break
 
-        # preprocessing
         frame_rgb= cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         faces = scrfd_model.detect(Image.fromarray(frame_rgb),threshold=threshold)
         face = find_biggest_face(faces) 
 
         if face is not None:
-            # get coordinates of ul & lr + kps
             ul, lr = face.bbox.upper_left, face.bbox.lower_right
             ul_x, ul_y, lr_x, lr_y = round(ul.x), round(ul.y), round(lr.x), round(lr.y)
             src_kps = process_kps(face)
-            
-            # segment face + 20% expansion of area
             cropped_face, scaled_ul, scaled_lr = crop_face(frame, (ul_x, ul_y, lr_x, lr_y))
 
             if detected_counter > 0:
@@ -105,7 +95,6 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
                 M, _ = cv.estimateAffinePartial2D(local_kps, std_kps)
                 aligned_face = cv.warpAffine(cropped_face, M, (112, 112), borderMode=cv.BORDER_CONSTANT)
 
-                # feed aligned_face into mobile-face-net and compare to prexisting TODO
                 face_rgb = cv.cvtColor(aligned_face, cv.COLOR_BGR2RGB)
                 face_norm = (face_rgb - 127.5)/ 128.0
                 face_bchw = face_norm.transpose(2, 0, 1)
@@ -114,16 +103,10 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
                     embedding = mfn_model(torch.tensor(face_bchw).float().unsqueeze(0).contiguous()).numpy() # (n_photos per person, 256)
                 
                 distances, idxs = knn.kneighbors(embedding, n_neighbors=5)
-                # print('idxs', idxs)
                 sims = 1 - distances[0]
-                
                 nn_labels = knn._y[idxs[0]]
                 pred = knn.predict(embedding)[0]
                 mask = nn_labels == pred 
-
-                pred_name = le.inverse_transform([pred])
-                # print('labels', le.inverse_transform(nn_labels))
-                print('prediction', pred_name)
 
                 avg_sim = 0
                 if mask.any():
@@ -139,15 +122,17 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
                 else:
                     name = 'Unknown'
                     color = (225, 0, 0)
-        
-            # draw box
+
             color = (0, 255, 0) if name != "Unknown" else (0, 0, 255)
             text = f"{name} {avg_sim*100:.2f}%"
             text_ul = (scaled_ul[0], scaled_ul[1] - 10)
             cv.rectangle(frame, scaled_ul, scaled_lr, color, 2)
             cv.putText(frame, text, text_ul, cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        else:
+            if detected_counter > 0: detected_counter-=1
 
         cv.imshow('frame',frame)
+
         if cv.waitKey(1) == ord('q'):
             print('saving attendance...')
             present_sheet = pd.DataFrame({
@@ -161,20 +146,3 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
     return present_sheet
 
 
-
-# program
-# if __name__ == '__main__':
-    # device = 'cpu'
-    # scrfd_model = SCRFD.from_path('../../models/scrfd.onnx')
-
-    # mfn_model = MobileFacenet().to(device)
-    # checkpoint = torch.load('../../models/mobile_face_net.ckpt', map_location=device)
-    # mfn_model.load_state_dict(checkpoint['net_state_dict'])
-    # mfn_model.eval()
-
-    # print('MobileFaceNet loaded')
-
-    # knn = joblib.load('../../models/knn.joblib')
-    # encoder = joblib.load('../../models/label_encoder.joblib')
-
-    # enable_inference(scrfd_model, mfn_model, knn, encoder, thresh=0.7)
