@@ -13,6 +13,7 @@ from sklearn.neighbors import KNeighborsClassifier
 def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
     cap = cv.VideoCapture(0)
     threshold = Threshold(probability=0.4)
+
     if not cap.isOpened():
         print("| cannot open camera")
         exit()
@@ -24,6 +25,7 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
         [41.54, 92.36], # mouth left
         [70.72, 92.20], # mouth right
     ], dtype=np.float32)
+
     curr_name = None
     curr_name_idx = -1
     student_names = []
@@ -104,6 +106,7 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
             else:
                 print(f'| no students were (e)ntered')
             print('| press (a) if you would like to abort the session')
+
         elif key == ord('a'):
             print('aborting session...')
             abort = True
@@ -175,6 +178,7 @@ def train_knn(dir_storage, course_section):
 
     y_encoded = encoder.fit_transform(y)
     knn.fit(X, y_encoded)
+
     return knn, encoder
 
 

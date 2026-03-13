@@ -53,6 +53,7 @@ def crop_face(frame, dimensions: tuple, scale=4):
 def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
     cap = cv.VideoCapture(0)
     threshold = Threshold(probability=0.4)
+
     if not cap.isOpened():
         print("| cannot open camera")
         return None
@@ -64,6 +65,7 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
         [41.54, 92.36], # mouth left
         [70.72, 92.20], # mouth right
     ], dtype=np.float32)
+
     w_coef = np.array([1, 1/2, 1/3, 1/4, 1/5], dtype=np.float32)
     present = np.zeros(len(le.classes_))
     name = ''
@@ -71,7 +73,6 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
     present_sheet = None
     detected_counter = 0
 
-    # start inference
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -79,6 +80,7 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
             break
 
         frame_rgb= cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+
         faces = scrfd_model.detect(Image.fromarray(frame_rgb),threshold=threshold)
         face = find_biggest_face(faces) 
 
@@ -129,7 +131,8 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
             cv.rectangle(frame, scaled_ul, scaled_lr, color, 2)
             cv.putText(frame, text, text_ul, cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         else:
-            if detected_counter > 0: detected_counter-=1
+            if detected_counter > 0:
+                detected_counter-=1
 
         cv.imshow('frame',frame)
 
