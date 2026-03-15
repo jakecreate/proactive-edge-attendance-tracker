@@ -40,7 +40,7 @@ while True:
         case 'd':
             if sheet is not None:
                 file_name = f'{department}_{course}.csv'
-                sheet.to_csv(f'../sheet/{file_name}', index=False)
+                sheet.to_csv(f'sheets/{file_name}', index=False)
                 print(f'{file_name} saved')
             else:
                 print('| attendence was not taken or no student was detected')

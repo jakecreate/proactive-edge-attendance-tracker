@@ -72,6 +72,7 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
     avg_sim = 0
     present_sheet = None
     detected_counter = 0
+    print('press (q) to quit')
 
     while True:
         ret, frame = cap.read()
@@ -146,6 +147,7 @@ def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
      
     cap.release()
     cv.destroyAllWindows()
+    print(present_sheet)
     return present_sheet
 
 
