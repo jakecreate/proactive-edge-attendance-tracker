@@ -55,8 +55,8 @@ def live_capture_faces(dir_storage, course_section, scrfd_model, mfn_model):
             src_kps = inf.process_kps(face)
             cropped_face, scaled_ul, scaled_lr = inf.crop_face(frame, (ul_x, ul_y, lr_x, lr_y))
             local_kps = src_kps - np.array(scaled_ul)
-            M, _ = cv.estimateAffinePartial2D(local_kps, std_kps)
-            aligned_face = cv.warpAffine(cropped_face, M, (112, 112), borderMode=cv.BORDER_CONSTANT)
+            m, _ = cv.estimateAffinePartial2D(local_kps, std_kps)
+            aligned_face = cv.warpAffine(cropped_face, m, (112, 112), borderMode=cv.BORDER_CONSTANT)
 
             if pressed_counter > 0:
                 color = (0, 0, 255)

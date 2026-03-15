@@ -50,6 +50,7 @@ def crop_face(frame, dimensions: tuple, scale=4):
     return frame[scaled_ul_y:scaled_lr_y,scaled_ul_x:scaled_lr_x], (scaled_ul_x, scaled_ul_y), (scaled_lr_x, scaled_lr_y)
 
 
+
 def enable_inference(scrfd_model, mfn_model, knn, le, thresh=0.7):
     cap = cv.VideoCapture(0)
     threshold = Threshold(probability=0.4)
