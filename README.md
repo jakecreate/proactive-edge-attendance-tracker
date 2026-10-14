@@ -1,6 +1,8 @@
 # Proactive Edge Attendance Tracker
 [**Demo Video on YouTube**](https://www.youtube.com/watch?v=MBhhNSbwCdM&feature=youtu.be)
 
+View the presentation [here](presentation.pdf).
+
 ## 🏗️ Model Architecture
 This project utilizes a robust two-stage pipeline (also where I got the pre-trained model weights from):
 
